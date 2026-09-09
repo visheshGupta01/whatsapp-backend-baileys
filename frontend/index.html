@@ -1,0 +1,263 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>WA Backend Console</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+<div id="app">
+
+  <!-- ============ TOP BAR ============ -->
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-mark">WA</span>
+      <span class="brand-name">Backend Console</span>
+    </div>
+    <div class="conn-fields">
+      <label>
+        <span>Backend URL</span>
+        <input id="backendUrl" type="text" placeholder="http://localhost:8080" />
+      </label>
+      <label>
+        <span>API key</span>
+        <input id="apiKey" type="password" placeholder="x-api-key" />
+      </label>
+      <button id="saveConn" class="btn btn-ghost">Connect</button>
+    </div>
+    <div class="health" id="healthIndicator">
+      <span class="dot" data-state="unknown"></span>
+      <span class="health-label">checking…</span>
+    </div>
+  </header>
+
+  <div class="layout">
+
+    <!-- ============ SESSIONS RAIL ============ -->
+    <aside class="rail">
+      <div class="rail-head">
+        <h2>Sessions</h2>
+        <button id="refreshSessions" class="icon-btn" title="Refresh">&#8635;</button>
+      </div>
+
+      <form id="newSessionForm" class="new-session-form">
+        <input id="newSessionId" type="text" placeholder="session id, e.g. acct-1" />
+        <button type="submit" class="btn btn-accent">Start</button>
+      </form>
+
+      <ul id="sessionList" class="session-list">
+        <li class="empty-hint">No sessions yet — start one above.</li>
+      </ul>
+    </aside>
+
+    <!-- ============ MAIN ============ -->
+    <main class="main">
+
+      <nav class="tabs" id="tabNav">
+        <button class="tab active" data-tab="chats">Chats</button>
+        <button class="tab" data-tab="contacts">Contacts</button>
+        <button class="tab" data-tab="groups">Groups</button>
+        <button class="tab" data-tab="privacy">Privacy</button>
+        <button class="tab" data-tab="usync">USync</button>
+        <button class="tab" data-tab="media">Media</button>
+        <button class="tab" data-tab="logs">Event log</button>
+      </nav>
+
+      <div class="current-session-bar" id="currentSessionBar">
+        <span class="csb-label">Active session:</span>
+        <span class="csb-value mono" id="currentSessionValue">none selected</span>
+      </div>
+
+      <!-- ---- CHATS TAB ---- -->
+      <section class="tab-panel active" id="panel-chats">
+        <div class="chats-layout">
+          <div class="chat-list-pane">
+            <div class="pane-head">
+              <h3>Chats</h3>
+              <button id="refreshChats" class="icon-btn" title="Refresh">&#8635;</button>
+            </div>
+            <ul id="chatList" class="chat-list">
+              <li class="empty-hint">Select a session to load chats.</li>
+            </ul>
+          </div>
+
+          <div class="thread-pane">
+            <div class="pane-head">
+              <h3 id="threadTitle">No chat selected</h3>
+              <div class="thread-actions">
+                <button id="markReadBtn" class="btn btn-ghost btn-sm">Mark read</button>
+                <button id="subscribePresenceBtn" class="btn btn-ghost btn-sm">Subscribe presence</button>
+              </div>
+            </div>
+            <ul id="messageList" class="message-list">
+              <li class="empty-hint">No messages loaded.</li>
+            </ul>
+
+            <form id="composerForm" class="composer">
+              <select id="composerType">
+                <option value="text">Text</option>
+                <option value="media">Media (URL / base64)</option>
+                <option value="location">Location</option>
+                <option value="poll">Poll</option>
+              </select>
+
+              <div class="composer-fields" id="composerFieldsText">
+                <input id="composerText" type="text" placeholder="Type a message…" />
+              </div>
+
+              <div class="composer-fields hidden" id="composerFieldsMedia">
+                <select id="mediaType">
+                  <option value="image">image</option>
+                  <option value="video">video</option>
+                  <option value="audio">audio</option>
+                  <option value="document">document</option>
+                  <option value="sticker">sticker</option>
+                </select>
+                <input id="mediaSource" type="text" placeholder="https://… or base64 string" />
+                <input id="mediaCaption" type="text" placeholder="caption (optional)" />
+              </div>
+
+              <div class="composer-fields hidden" id="composerFieldsLocation">
+                <input id="locLat" type="text" placeholder="latitude" />
+                <input id="locLng" type="text" placeholder="longitude" />
+                <input id="locName" type="text" placeholder="place name (optional)" />
+              </div>
+
+              <div class="composer-fields hidden" id="composerFieldsPoll">
+                <input id="pollName" type="text" placeholder="poll question" />
+                <input id="pollOptions" type="text" placeholder="option1, option2, option3" />
+              </div>
+
+              <button type="submit" class="btn btn-accent">Send</button>
+            </form>
+          </div>
+        </div>
+      </section>
+
+      <!-- ---- CONTACTS TAB ---- -->
+      <section class="tab-panel" id="panel-contacts">
+        <div class="pane-head">
+          <h3>Contacts</h3>
+          <input id="contactFilter" type="text" placeholder="filter by name or jid…" class="filter-input" />
+          <button id="refreshContacts" class="icon-btn" title="Refresh">&#8635;</button>
+        </div>
+        <table class="data-table">
+          <thead><tr><th>Display name</th><th>JID</th><th>Notify</th><th>Business</th><th></th></tr></thead>
+          <tbody id="contactsBody">
+            <tr><td colspan="5" class="empty-hint">Select a session to load contacts.</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <!-- ---- GROUPS TAB ---- -->
+      <section class="tab-panel" id="panel-groups">
+        <div class="groups-layout">
+          <div class="pane-head">
+            <h3>Groups</h3>
+            <button id="refreshGroups" class="icon-btn" title="Refresh">&#8635;</button>
+          </div>
+          <ul id="groupList" class="chat-list">
+            <li class="empty-hint">Select a session to load groups.</li>
+          </ul>
+
+          <details class="form-card">
+            <summary>Create group</summary>
+            <form id="createGroupForm">
+              <input id="newGroupSubject" type="text" placeholder="Group subject" />
+              <input id="newGroupParticipants" type="text" placeholder="participants, comma separated numbers" />
+              <button type="submit" class="btn btn-accent btn-sm">Create</button>
+            </form>
+          </details>
+
+          <details class="form-card" id="groupDetailCard">
+            <summary>Manage selected group</summary>
+            <div id="groupDetailBody" class="group-detail">
+              <p class="empty-hint">Select a group from the list above.</p>
+            </div>
+          </details>
+        </div>
+      </section>
+
+      <!-- ---- PRIVACY TAB ---- -->
+      <section class="tab-panel" id="panel-privacy">
+        <div class="pane-head">
+          <h3>Privacy settings</h3>
+          <button id="refreshPrivacy" class="icon-btn" title="Fetch from WhatsApp">&#8635;</button>
+        </div>
+        <div class="privacy-grid" id="privacyGrid"></div>
+
+        <div class="pane-head" style="margin-top:24px;">
+          <h3>Blocklist</h3>
+        </div>
+        <form id="blockForm" class="inline-form">
+          <input id="blockJid" type="text" placeholder="phone number or JID" />
+          <button type="submit" class="btn btn-ghost btn-sm">Block</button>
+          <button type="button" id="unblockBtn" class="btn btn-ghost btn-sm">Unblock</button>
+        </form>
+        <ul id="blocklist" class="chat-list"></ul>
+      </section>
+
+      <!-- ---- USYNC TAB ---- -->
+      <section class="tab-panel" id="panel-usync">
+        <div class="pane-head"><h3>Check numbers on WhatsApp</h3></div>
+        <form id="usyncForm" class="usync-form">
+          <textarea id="usyncNumbers" placeholder="One number per line, e.g.&#10;919999999999&#10;14155552671"></textarea>
+          <button type="submit" class="btn btn-accent btn-sm">Check</button>
+        </form>
+        <table class="data-table">
+          <thead><tr><th>Input</th><th>Exists on WhatsApp</th><th>Resolved JID</th></tr></thead>
+          <tbody id="usyncBody"></tbody>
+        </table>
+      </section>
+
+      <!-- ---- MEDIA TAB ---- -->
+      <section class="tab-panel" id="panel-media">
+        <div class="pane-head"><h3>Fetch media by ID</h3></div>
+        <form id="mediaLookupForm" class="inline-form">
+          <input id="mediaIdInput" type="text" placeholder="media UUID (from a message row)" />
+          <button type="submit" class="btn btn-ghost btn-sm">Load</button>
+        </form>
+        <div id="mediaPreview" class="media-preview empty-hint">No media loaded.</div>
+
+        <div class="pane-head" style="margin-top:24px;"><h3>Upload a local file</h3></div>
+        <form id="mediaUploadForm" class="inline-form">
+          <input id="mediaFileInput" type="file" />
+          <button type="submit" class="btn btn-ghost btn-sm">Upload</button>
+        </form>
+        <pre id="uploadResult" class="log-json"></pre>
+      </section>
+
+      <!-- ---- LOGS TAB ---- -->
+      <section class="tab-panel" id="panel-logs">
+        <div class="pane-head">
+          <h3>Live event log</h3>
+          <button id="clearLogs" class="icon-btn" title="Clear">&#10005;</button>
+        </div>
+        <ul id="eventLog" class="event-log"></ul>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- ============ QR MODAL ============ -->
+  <div id="qrModal" class="modal hidden">
+    <div class="modal-box">
+      <div class="modal-head">
+        <h3>Scan to link <span class="mono" id="qrSessionLabel"></span></h3>
+        <button id="closeQrModal" class="icon-btn">&#10005;</button>
+      </div>
+      <img id="qrImage" alt="WhatsApp QR code" />
+      <p class="modal-hint">Open WhatsApp on your phone → Linked devices → Link a device</p>
+    </div>
+  </div>
+
+</div>
+
+<script src="https://cdn.socket.io/4.8.1/socket.io.min.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
